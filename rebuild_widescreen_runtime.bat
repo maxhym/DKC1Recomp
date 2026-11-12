@@ -32,6 +32,8 @@ cl /nologo /c /W0 /O1 %DEFS% %INCS% /Fo:dkc1_flight_recorder.obj ..\..\runner\dk
 if errorlevel 1 exit /b 1
 cl /nologo /c /W0 /O1 %DEFS% %INCS% /Fo:dkc1_blank_scan.obj ..\..\runner\dkc1_blank_scan.c
 if errorlevel 1 exit /b 1
+cl /nologo /c /W0 /O1 %DEFS% %INCS% /Fo:dkc1_telemetry.obj ..\..\runner\dkc1_telemetry.c
+if errorlevel 1 exit /b 1
 cl /nologo /c /W0 /O1 %DEFS% %INCS% /Fo:dkc1_invariant_monitor.obj ..\..\runner\dkc1_invariant_monitor.c
 if errorlevel 1 exit /b 1
 cl /nologo /c /W0 /O1 %DEFS% %INCS% /Fo:ws_shadow.obj ..\..\snesrecomp\runner\src\snes\ws_shadow.c

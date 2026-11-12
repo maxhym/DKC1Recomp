@@ -10,6 +10,7 @@
  */
 #include "dkc1_blank_scan.h"
 #include "dkc1_game.h"
+#include "dkc1_telemetry.h"
 #include "dkc1_dixie_mod.h"
 #include "snes/dma.h"
 #include "dkc1_invariant_monitor.h"
@@ -2247,6 +2248,7 @@ int main(int argc, char **argv) {
     s_last_input = input;
     Dkc1DebugRecordInput(input);
     pacer.pending_setup_ms = HostFramePacerPhaseMs(&pacer, &phase_tick);
+    Dkc1TelemetryHostInput(input);
     RtlRunFrame(input);
     pacer.pending_emulation_ms = HostFramePacerPhaseMs(&pacer, &phase_tick);
     if (g_fail) {

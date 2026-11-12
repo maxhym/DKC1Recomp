@@ -9,6 +9,10 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
+# The DKCountry telemetry bridge reports the port version in its hello line.
+set_source_files_properties(runner/dkc1_telemetry.c PROPERTIES
+    COMPILE_DEFINITIONS DKC1_TELEMETRY_BUILD="${PROJECT_VERSION}")
+
 execute_process(
     COMMAND git rev-parse --short HEAD
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -83,6 +87,7 @@ set(DKC1_RUNNER_SOURCES
     runner/dkc1_flight_recorder.c
     runner/dkc1_blank_scan.c
     runner/dkc1_invariant_monitor.c
+    runner/dkc1_telemetry.c
     runner/verified_rom.c)
 
 # DKC1 supplies its own lightweight keybind/report host adapters. The shared

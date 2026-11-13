@@ -1516,6 +1516,7 @@ static void PumpAudio(void) {
   if (frames > kAudioScratchFrames)
     frames = kAudioScratchFrames;
   RtlRenderAudio(s_audio_scratch, frames, kAudioChannels);
+  Dkc1TelemetryHostAudio(s_audio_scratch, frames, kAudioChannels, kAudioRate);
   Dkc1Msu1Mix(s_msu1, s_audio_scratch, frames, kAudioChannels, kAudioRate);
   /* Always consume the canonical audio, including muted assist frames. */
   if (s_fast_forward || s_paused) return;

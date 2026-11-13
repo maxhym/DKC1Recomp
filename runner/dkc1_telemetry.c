@@ -155,6 +155,114 @@ static bool s_checked;
 static uint64_t s_last_frame;
 static uint32_t s_pending_input;
 
+/* ------------------------------------------------- boot sound capture --- */
+
+enum { kBootAudioMinSeconds = 10 };
+
+static void BootAudioPut32(uint8_t *p, uint32_t v) {
+  p[0] = (uint8_t)v; p[1] = (uint8_t)(v >> 8); p[2] = (uint8_t)(v >> 16); p[3] = (uint8_t)(v >> 24);
+}
+
+static bool BootAudioHeader(Dkc1BootAudio *b, uint32_t data_bytes) {
+  uint8_t h[44] = {'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'A', 'V', 'E', 'f', 'm', 't', ' ',
+                   16, 0, 0, 0, 1, 0};
+  const uint32_t align = (uint32_t)b->channels * 2u;
+  BootAudioPut32(h + 4, data_bytes ? data_bytes + 36u : 0u);
+  h[22] = (uint8_t)b->channels;
+  BootAudioPut32(h + 24, (uint32_t)b->rate);
+  BootAudioPut32(h + 28, (uint32_t)b->rate * align);
+  h[32] = (uint8_t)align;
+  h[34] = 16;
+  memcpy(h + 36, "data", 4);
+  BootAudioPut32(h + 40, data_bytes);
+  return fseek(b->file, 0, SEEK_SET) == 0 && fwrite(h, 1, sizeof h, b->file) == sizeof h;
+}
+
+bool Dkc1BootAudioOpen(Dkc1BootAudio *b, const char *path, int channels,
+                       int rate, double max_seconds) {
+  memset(b, 0, sizeof *b);
+  if (!path || !path[0] || channels < 1 || channels > 2 || rate < 8000 || rate > 96000 ||
+      !(max_seconds >= 1.0 && max_seconds <= 600.0))
+    return false;
+  b->file = fopen(path, "wb");
+  if (!b->file) return false;
+  b->channels = channels;
+  b->rate = rate;
+  b->max_frames = (uint32_t)(max_seconds * rate);
+  if (!BootAudioHeader(b, 0)) {
+    fclose(b->file);
+    b->file = NULL;
+    return false;
+  }
+  return true;
+}
+
+static void BootAudioFinish(Dkc1BootAudio *b) {
+  if (!b->file) return;
+  (void)BootAudioHeader(b, b->frames * (uint32_t)b->channels * 2u);
+  fclose(b->file);
+  b->file = NULL;
+  b->done = true;
+}
+
+void Dkc1BootAudioWrite(Dkc1BootAudio *b, const int16_t *samples, int frames) {
+  if (!b->file || !samples || frames <= 0) return;
+  if (!b->heard) {
+    /* Skip the silence before the first sound. */
+    int first = 0;
+    for (; first < frames * b->channels; ++first)
+      if (samples[first] > 16 || samples[first] < -16) break;
+    first /= b->channels;
+    if (first >= frames) return;
+    b->heard = true;
+    samples += first * b->channels;
+    frames -= first;
+  }
+  if ((uint32_t)frames > b->max_frames - b->frames) frames = (int)(b->max_frames - b->frames);
+  for (int i = 0; i < frames * b->channels; ++i) {
+    const uint16_t v = (uint16_t)samples[i];
+    uint8_t le[2];
+    le[0] = (uint8_t)v;
+    le[1] = (uint8_t)(v >> 8);
+    if (fwrite(le, 1, 2, b->file) != 2) {
+      BootAudioFinish(b);
+      return;
+    }
+  }
+  b->frames += (uint32_t)frames;
+  if (b->frames >= b->max_frames ||
+      (b->stop && b->frames >= (uint32_t)kBootAudioMinSeconds * (uint32_t)b->rate))
+    BootAudioFinish(b);
+}
+
+void Dkc1BootAudioGameplay(Dkc1BootAudio *b) {
+  if (b->file) b->stop = true;
+}
+
+bool Dkc1BootAudioDone(const Dkc1BootAudio *b) { return b->done; }
+
+static Dkc1BootAudio s_boot_audio;
+static bool s_boot_audio_checked;
+
+static void BootAudioClose(void) { BootAudioFinish(&s_boot_audio); }
+
+void Dkc1TelemetryHostAudio(const int16_t *samples, int frames, int channels,
+                            int rate) {
+  if (!s_boot_audio_checked) {
+    s_boot_audio_checked = true;
+    const char *path = getenv("DKCOUNTRY_BOOT_AUDIO");
+    if (path && path[0]) {
+      const char *limit = getenv("DKCOUNTRY_BOOT_AUDIO_SECONDS");
+      const double seconds = limit && limit[0] ? atof(limit) : 70.0;
+      if (Dkc1BootAudioOpen(&s_boot_audio, path, channels, rate, seconds))
+        atexit(BootAudioClose);
+      else
+        fprintf(stderr, "boot audio: cannot write %s; continuing without it\n", path);
+    }
+  }
+  Dkc1BootAudioWrite(&s_boot_audio, samples, frames);
+}
+
 static void FileSink(void *context, const char *line) {
   FILE *file = (FILE *)context;
   fputs(line, file);
@@ -188,6 +296,8 @@ void Dkc1TelemetryHostInput(uint32_t input) {
 }
 
 void Dkc1TelemetryHostFrame(const uint8_t *wram, uint64_t frame) {
+  /* The boot sound capture has no gameplay signal in this port: the
+   * launcher's time limit ends it. */
   if (!wram || !HostReady()) return;
   if (!s_host.said_hello) Dkc1TelemetryHello(&s_host, DKC1_TELEMETRY_BUILD, frame);
   Dkc1TelemetryInput(&s_host, s_pending_input, frame);

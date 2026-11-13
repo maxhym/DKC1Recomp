@@ -853,12 +853,30 @@ void Dkc1HdCompose(const Ppu *ppu, int native_top, int native_bottom) {
 
 /* ---- Finding Donkey in the frame (the Baby Kong mod's method). */
 
+/* On an animal buddy the game splits Donkey in two: his own actor slot
+ * plays the animal's animations ($1E-$46, "ridden by DK") and shows the
+ * animal, while a rider actor plays one of four seated or hanging
+ * animations. The rider is the one to replace; the animal keeps its art. */
+bool Dkc1HdIsRiderAnimation(unsigned animation) {
+  return animation == 0x1bu || animation == 0x1cu || animation == 0x1du ||
+         animation == 0x5bu;
+}
+
+bool Dkc1HdIsAnimalAnimation(unsigned animation) {
+  return animation >= 0x1eu && animation <= 0x46u;
+}
+
 static uint32_t FindDonkeySlot(const uint8_t *wram) {
+  uint32_t donkey = 0;
   for (uint32_t slot = DKC1_ACTOR_SLOT_FIRST;
        slot <= DKC1_ACTOR_SLOT_LAST; slot += DKC1_ACTOR_SLOT_STEP) {
-    if (Dkc1WramU16(wram, DKC1_WRAM_NorSpr_SpriteIDLo + slot) == 1u) return slot;
+    const unsigned id = Dkc1WramU16(wram, DKC1_WRAM_NorSpr_SpriteIDLo + slot);
+    if (id == 0u) continue;
+    if (Dkc1HdIsRiderAnimation(Dkc1Actor_SprAnimID(wram, slot))) return slot;
+    if (id == 1u && !donkey) donkey = slot;
   }
-  return 0;
+  if (donkey && Dkc1HdIsAnimalAnimation(Dkc1Actor_SprAnimID(wram, donkey))) return 0;
+  return donkey;
 }
 
 static int DecodeOamX(const Ppu *ppu, int slot) {

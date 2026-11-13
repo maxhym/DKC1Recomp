@@ -114,6 +114,11 @@ typedef struct Dkc1HdPose {
 Dkc1HdPose Dkc1HdPoseForAnimation(unsigned animation_id, unsigned state,
                                   int x_velocity, int y_velocity);
 
+/* Which of Donkey's animation IDs belong to the rider on an animal buddy,
+ * and which to the animal his own actor slot then shows. */
+bool Dkc1HdIsRiderAnimation(unsigned animation);
+bool Dkc1HdIsAnimalAnimation(unsigned animation);
+
 typedef struct Dkc1HdActorInput {
   int anchor_x;         /* actor centre line in authentic screen px */
   uint8_t properties;   /* OAM attribute byte: flip and priority */

@@ -122,6 +122,12 @@ static void TestPoses(void) {
    * ground rather than centred like a hit. */
   for (unsigned id = 0x54; id <= 0x5a; ++id)
     CHECK(Dkc1HdPoseForAnimation(id, 0, 0, 0).slot == kDkc1HdCrouch);
+  /* On an animal the rider is replaced, never the animal. */
+  CHECK(Dkc1HdIsRiderAnimation(0x1b) && Dkc1HdIsRiderAnimation(0x5b));
+  CHECK(!Dkc1HdIsRiderAnimation(0x1e) && !Dkc1HdIsRiderAnimation(0x01));
+  CHECK(Dkc1HdIsAnimalAnimation(0x1e) && Dkc1HdIsAnimalAnimation(0x46));
+  CHECK(!Dkc1HdIsAnimalAnimation(0x1b) && !Dkc1HdIsAnimalAnimation(0x47));
+  CHECK(Dkc1HdPoseForAnimation(0x1b, 0, 0, 0).slot == kDkc1HdRide);
   p = Dkc1HdPoseForAnimation(0x10, 0, 0, 0);
   CHECK(p.slot == kDkc1HdKnockout && !p.center && !p.idle);
   CHECK(Dkc1HdPoseForAnimation(0x0c, 0, 0, 0).slot == kDkc1HdHurt);

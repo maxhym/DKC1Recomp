@@ -21,9 +21,12 @@ own art.
 2. Donkey's semantic animation ID (`$01`-`$68`) picks a pose slot through a
    table in `runner/dkc1_hd.c`: idle, walk, run, jump or fall (a negative Y
    velocity is upward), roll, carry, throw, ride on an animal buddy, ropes,
-   swim, hurt, victory. Animation ID zero falls back to the actor state, then
+   swim, hurt, victory, crouch (ducking and crawlspaces, `$54`-`$5A`) and
+   knockout (a lost life, `$10`). The names of the IDs come from a public
+   disassembly. Animation ID zero falls back to the actor state, then
    the velocity. Resting poses are relieved by a fidget after 5 s; the fidget
-   slots take turns. The hand slap uses the first fidget. Donkey carries
+   slots take turns. The ground slap and the chest beat at the start of a
+   level use the first fidget. Donkey carries
    overhead, so the pack's front-carry slots (DKC2's Kongs) are not used.
 3. After each `ppu_runLine`, `Dkc1HdObserveLine` records where the main
    screen's priority buffer holds a background layer above Donkey's OBJ

@@ -116,7 +116,14 @@ static void TestPoses(void) {
   CHECK(Dkc1HdPoseForAnimation(0x49, 0, 0, 0).slot == kDkc1HdCarryWalk);
   CHECK(Dkc1HdPoseForAnimation(0x4a, 0, 0, 0).slot == kDkc1HdThrow);
   CHECK(Dkc1HdPoseForAnimation(0x5e, 0, 0, 0).slot == kDkc1HdClimbIdle);
-  CHECK(Dkc1HdPoseForAnimation(0x09, 0, 0, 0).slot == kDkc1HdVictory);
+  CHECK(Dkc1HdPoseForAnimation(0x09, 0, 0, 0).slot == kDkc1HdFidget);
+  CHECK(Dkc1HdPoseForAnimation(0x63, 0, 0, 0).slot == kDkc1HdVictory);
+  /* Ducking and crawlspaces crouch; a lost life lies knocked out, on the
+   * ground rather than centred like a hit. */
+  for (unsigned id = 0x54; id <= 0x5a; ++id)
+    CHECK(Dkc1HdPoseForAnimation(id, 0, 0, 0).slot == kDkc1HdCrouch);
+  p = Dkc1HdPoseForAnimation(0x10, 0, 0, 0);
+  CHECK(p.slot == kDkc1HdKnockout && !p.center && !p.idle);
   CHECK(Dkc1HdPoseForAnimation(0x0c, 0, 0, 0).slot == kDkc1HdHurt);
   /* Animation ID zero falls back to the state, then the velocity. */
   CHECK(Dkc1HdPoseForAnimation(0, 43, 0, 0).slot == kDkc1HdSwim);

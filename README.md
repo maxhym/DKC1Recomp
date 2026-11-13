@@ -89,6 +89,12 @@ frame and does nothing without the variable. See
 [the telemetry notes](docs/DKCOUNTRY_TELEMETRY.md) for fields and the
 remaining validation.
 
+The same bridge can record the game's boot sound for the launcher: when
+`DKCOUNTRY_BOOT_AUDIO` names a file, the sound rendered from power-on (logos,
+title screen) is written there as a WAV until the first demo level or a time
+limit. The launcher runs this once, hidden, on the player's own PC; the file
+is never part of this repository. Not yet tried against a real ROM.
+
 ## Debugging and validation
 
 The widescreen port is developed from byte-exact, deterministic evidence—not

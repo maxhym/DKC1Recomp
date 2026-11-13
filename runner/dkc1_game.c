@@ -1,5 +1,6 @@
 #include "dkc1_game.h"
 #include "dkc1_baby_kong.h"
+#include "dkc1_hd.h"
 #include "dkc1_video.h"
 #include "dkc1_terrain.h"
 #include "dkc1_wall_seams.h"
@@ -2262,6 +2263,9 @@ void Dkc1DrawPpuFrame(void) {
   }
 
   Dkc1BabyKongPrepareFrame(g_ppu, g_ram, presentation_bias);
+  /* Presentation only, and inert unless a host loaded an HD pack. Runs after
+   * the Baby Kong hook, which releases the OBJ overlay surface. */
+  Dkc1HdPrepareFrame(g_ppu, g_ram, presentation_bias);
 
   dma_startDma(g_dma, g_snesrecomp_last_hdmaen, true);
   WsShadowDebugBeginFrame();
@@ -2278,6 +2282,7 @@ void Dkc1DrawPpuFrame(void) {
             (uint16_t)(g_ppu->hScroll[layer] + presentation_bias);
     }
     ppu_runLine(g_ppu, line);
+    Dkc1HdObserveLine(g_ppu, line);
     if (extend_world && presentation_bias != 0) {
       for (int layer = 0; layer < 4; layer++)
         g_ppu->hScroll[layer] =
@@ -2308,6 +2313,7 @@ void Dkc1DrawPpuFrame(void) {
   }
 
   Dkc1BabyKongDrawFrame(g_ppu);
+  Dkc1HdFinishFrame(g_ppu);
 
   /* Model the VBlank boundary after the visible lines so the PPU reloads its
    * internal OAM port from OAMADD before the next frame's OAM DMA. */

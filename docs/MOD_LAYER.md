@@ -27,6 +27,7 @@ mod declarations + conflict checking + the existing evidence gates
 | Routine replacement | `tools/gen_replacements.py` + `runner/replacements/` + `build_host_replace.bat` | live — see DKC1_REPLACE below; demo replacement proven equivalent |
 | Gameplay/presentation split | `first_divergence.py` + byte-identical WRAM A/B + `contracts/wide-intended-differences.json` | live discipline; `mod_conflicts.py` enforces it at declaration level |
 | Baby Kong reference mod | `runner/dkc1_baby_kong.*` + `docs/BABY_KONG_MOD.md` | live — opt-in, hash-gated DKC3 ROM decode; Kiddy presentation plus isolated movement tuning; stock path fails closed |
+| HD Donkey Kong (Mandro) | `runner/dkc1_hd.*` + `runner/windows_graphics.c` + `docs/HD_KONG.md` | live on Windows — opt-in by the presence of `mods/kong-hd.dkc2hd`; Donkey's OAM run is captured out of the composite and an HD pose is drawn by the presenter; stock path untouched without a pack; not yet checked with a ROM |
 | Dixie Kong ROM-hack variant | `runner/dkc1_dixie_mod.*` + `runner/dkc1_dixie_patch.inc` + `recomp/dixie/` + `generated/snesrecomp_dixie/` + `build_host_dixie.bat` + `docs/DIXIE_MOD.md` | live — separate recompilation of the pinned 6 MiB patched ROM (stock cfg analyzes clean, 0 LLE); optional Mods-menu toggle (relaunch sibling exe, registry-persisted, `DKC1_DIXIE` env for headless); **needs no external ROM**: the variant synthesizes the modded image in memory from the verified clean ROM + embedded IPS, hash-self-checked; stock build untouched |
 
 Regeneration order after source changes:

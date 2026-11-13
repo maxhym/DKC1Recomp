@@ -20,6 +20,8 @@ cl /nologo /c /W0 /O1 %DEFS% %INCS% /Fo:dkc1_baby_kong.obj ..\..\runner\dkc1_bab
 if errorlevel 1 exit /b 1
 cl /nologo /c /W0 /O1 %DEFS% %INCS% /Fo:dkc1_baby_kong_movement.obj ..\..\runner\dkc1_baby_kong_movement.c
 if errorlevel 1 exit /b 1
+cl /nologo /c /W0 /O1 %DEFS% %INCS% /Fo:dkc1_hd.obj ..\..\runner\dkc1_hd.c
+if errorlevel 1 exit /b 1
 cl /nologo /c /W0 /O1 %DEFS% %INCS% /Fo:dkc1_margin_proxy.obj ..\..\runner\dkc1_margin_proxy.c
 if errorlevel 1 exit /b 1
 cl /nologo /c /W0 /O1 %DEFS% %INCS% /Fo:dkc1_game.obj ..\..\runner\dkc1_game.c

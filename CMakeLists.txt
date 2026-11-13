@@ -77,6 +77,7 @@ set(DKC1_RUNNER_SOURCES
     runner/dkc1_baby_kong.c
     runner/dkc1_baby_kong_animation.c
     runner/dkc1_baby_kong_movement.c
+    runner/dkc1_hd.c
     runner/dkc1_dixie_mod.c
     runner/dkc1_margin_proxy.c
     runner/dkc1_ws_trace.c

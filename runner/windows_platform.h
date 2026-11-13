@@ -11,6 +11,8 @@ int Dkc1WindowsSavedHaptics(void);
 void Dkc1WindowsSetHaptics(int enabled);
 void Dkc1WindowsUpdateHapticsMenu(int enabled);
 bool Dkc1WindowsGraphicsInit(SDL_Window *window);
+/* True when the presenter can draw the HD character sprite. */
+bool Dkc1WindowsGraphicsSpritesReady(void);
 void Dkc1WindowsGraphicsDraw(const uint32_t *pixels,int w,int h,int display_width,
                              const Dkc1GraphicsSettings *settings);
 void Dkc1WindowsGraphicsSwap(void);

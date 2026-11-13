@@ -6,6 +6,7 @@
  */
 #include "dkc1_blank_scan.h"
 #include "dkc1_baby_kong.h"
+#include "dkc1_hd.h"
 #include "dkc1_dixie_mod.h"
 #include "snes/dma.h"
 #include "dkc1_debug_dump.h"
@@ -972,7 +973,19 @@ static bool InitVideo(void) {
     return false;
 #ifdef _WIN32
   Dkc1WindowsAttach(s_window);
-  return Dkc1WindowsGraphicsInit(s_window);
+  if (!Dkc1WindowsGraphicsInit(s_window))
+    return false;
+  /* The HD character needs a presenter that draws its sprite. It replaces
+   * Donkey Kong, so the Dixie variant keeps its own art. */
+  if (Dkc1WindowsGraphicsSpritesReady() && !Dkc1DixieIsVariant()) {
+    char pack[1024] = "";
+    char *base = SDL_GetBasePath();
+    if (base)
+      (void)snprintf(pack, sizeof pack, "%smods/kong-hd.dkc2hd", base);
+    SDL_free(base);
+    Dkc1HdInitialize(pack[0] ? pack : NULL);
+  }
+  return true;
 #endif
 
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
@@ -1878,6 +1891,8 @@ static void HandleKey(SDL_Keycode key, SDL_Keymod mod) {
     }
     s_step_once = 0;
     s_reanchor_pacer = 1;
+  } else if (key == SDLK_F8 && !s_paused && Dkc1HdReady()) {
+    (void)Dkc1HdToggle(); /* compare the HD character with the original */
   } else if (key == SDLK_F8 && s_paused) {
     s_step_once = 1;
   } else if (key == SDLK_F9) {

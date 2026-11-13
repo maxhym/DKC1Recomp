@@ -2,6 +2,7 @@
  * Only immutable completed host pixels are read. No guest state is touched. */
 #include "windows_platform.h"
 #include "desktop_crt.h"
+#include "dkc1_hd.h"
 #include <SDL_opengl.h>
 #include <SDL_opengl_glext.h>
 #include <stdio.h>
@@ -32,6 +33,18 @@ static SDL_Window *s_window;
 static SDL_GLContext s_context;
 static GLuint s_programs[PassCount],s_vao,s_fbo;
 static Target s_input,s_lines,s_beam,s_glow[2],s_halo[2];
+/* HD character sprite: one textured quad over the finished game image. */
+static GLuint s_sprite_program,s_sprite_texture;
+static uint32_t s_sprite_serial;
+static const char *sprite_vertex_source=
+  "#version 330 core\nout vec2 v_uv;\nuniform float r[5];\n"
+  "void main(){vec2 t[4]=vec2[](vec2(0,0),vec2(0,1),vec2(1,0),vec2(1,1));"
+  "v_uv=t[gl_VertexID];"
+  "gl_Position=vec4(mix(r[0],r[2],v_uv.x),mix(r[1],r[3],v_uv.y),0,1);}";
+static const char *sprite_fragment_source=
+  "#version 330 core\nin vec2 v_uv;out vec4 color;\n"
+  "uniform sampler2D source;uniform float r[5];\n"
+  "void main(){vec4 c=texture(source,v_uv);color=vec4(c.rgb*r[4],c.a);}";
 static const char *vertex_source=
   "#version 330 core\nout vec2 v_uv;\n"
   "uniform int final_pass;\n"
@@ -79,6 +92,40 @@ static bool Pass(int index,Target *source,Target *target,int x,int y,int w,int h
   pBindVertexArray(s_vao); glDrawArrays(GL_TRIANGLE_STRIP,0,4);
   return glGetError()==GL_NO_ERROR;
 }
+bool Dkc1WindowsGraphicsSpritesReady(void){return s_sprite_program!=0;}
+/* Draws the HD sprites inside the game viewport (x,y,vw,vh), after every
+ * pass. Sprite rectangles are in presented-frame pixels, origin top-left. */
+static void DrawSprites(int x,int y,int vw,int vh,int w,int h) {
+  if(!s_sprite_program||w<1||h<1)return;
+  const Dkc1OverlaySprite *sprites=NULL;
+  int count=Dkc1HdSprites(&sprites);
+  if(count<1||!sprites)return;
+  const Dkc1OverlaySprite *sprite=&sprites[0];
+  if(!sprite->rgba||sprite->width<1||sprite->height<1)return;
+  pBindFramebuffer(GL_FRAMEBUFFER,0);glViewport(x,y,vw,vh);
+  pActiveTexture(GL_TEXTURE0);
+  if(!s_sprite_texture){glGenTextures(1,&s_sprite_texture);s_sprite_serial=0;}
+  glBindTexture(GL_TEXTURE_2D,s_sprite_texture);
+  if(s_sprite_serial!=sprite->serial) {
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+    glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,sprite->width,sprite->height,0,GL_RGBA,GL_UNSIGNED_BYTE,sprite->rgba);
+    glPixelStorei(GL_UNPACK_ALIGNMENT,4);
+    s_sprite_serial=sprite->serial;
+  }
+  /* Texture row 0 is the sprite's top row, so v=0 maps to the top edge. */
+  float r[5]={-1.f+2.f*sprite->x/(float)w,1.f-2.f*sprite->y/(float)h,
+    -1.f+2.f*(sprite->x+sprite->w)/(float)w,1.f-2.f*(sprite->y+sprite->h)/(float)h,
+    sprite->brightness};
+  pUseProgram(s_sprite_program);
+  pUniform1fv(pGetUniformLocation(s_sprite_program,"r"),5,r);
+  glEnable(GL_BLEND);glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+  pBindVertexArray(s_vao);glDrawArrays(GL_TRIANGLE_STRIP,0,4);
+  glDisable(GL_BLEND);
+}
 bool Dkc1WindowsGraphicsInit(SDL_Window *window) {
   s_window=window; s_context=SDL_GL_CreateContext(window);
   if (!s_context) return false;
@@ -98,6 +145,18 @@ bool Dkc1WindowsGraphicsInit(SDL_Window *window) {
     for(int j=0;j<5;j++) pUniform1iv(pGetUniformLocation(program,names[j]),1,&units[j]);
   }
   pDeleteShader(vertex); pGenVertexArrays(1,&s_vao);pGenFramebuffers(1,&s_fbo);
+  /* Optional: without it the game simply keeps its native sprites. */
+  GLuint sprite_vertex=Shader(GL_VERTEX_SHADER,sprite_vertex_source);
+  GLuint sprite_fragment=Shader(GL_FRAGMENT_SHADER,sprite_fragment_source);
+  if(sprite_vertex&&sprite_fragment) {
+    GLuint program=pCreateProgram(); pAttachShader(program,sprite_vertex); pAttachShader(program,sprite_fragment);
+    pLinkProgram(program); GLint ok=0; pGetProgramiv(program,GL_LINK_STATUS,&ok);
+    if(ok) { s_sprite_program=program; pUseProgram(program);
+      const int unit=0; pUniform1iv(pGetUniformLocation(program,"source"),1,&unit); }
+    else pDeleteProgram(program);
+  }
+  if(sprite_vertex)pDeleteShader(sprite_vertex);
+  if(sprite_fragment)pDeleteShader(sprite_fragment);
   SDL_GL_SetSwapInterval(0); /* QPC is the single 60 Hz producer authority. */
   fprintf(stderr,"[windows-graphics] OpenGL %s; all 7 shader passes ready\n",glGetString(GL_VERSION));
   return true;
@@ -139,6 +198,7 @@ void Dkc1WindowsGraphicsDraw(const uint32_t *pixels,int w,int h,int display_widt
     ok=Pass(settings->upscaler==kDkc1UpscalerReconstruct?Reconstruct:Flat,&s_input,NULL,x,y,vw,vh,u);
   }
   if(!ok)fprintf(stderr,"[windows-graphics] render pass failed\n");
+  else DrawSprites(x,y,vw,vh,w,h);
 }
 void Dkc1WindowsGraphicsSwap(void){if(s_context)SDL_GL_SwapWindow(s_window);}
 void Dkc1WindowsGraphicsClose(void){
@@ -146,6 +206,8 @@ void Dkc1WindowsGraphicsClose(void){
   Target *targets[]={&s_input,&s_lines,&s_beam,&s_glow[0],&s_glow[1],&s_halo[0],&s_halo[1]};
   for(int i=0;i<7;i++){glDeleteTextures(1,&targets[i]->texture);memset(targets[i],0,sizeof(Target));}
   for(int i=0;i<PassCount;i++){pDeleteProgram(s_programs[i]);s_programs[i]=0;}
+  if(s_sprite_program){pDeleteProgram(s_sprite_program);s_sprite_program=0;}
+  if(s_sprite_texture){glDeleteTextures(1,&s_sprite_texture);s_sprite_texture=0;}
   pDeleteVertexArrays(1,&s_vao);pDeleteFramebuffers(1,&s_fbo);SDL_GL_DeleteContext(s_context);s_context=NULL;
 }
 int Dkc1WindowsGraphicsTest(void){

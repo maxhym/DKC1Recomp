@@ -243,15 +243,17 @@ bool Dkc1BootAudioDone(const Dkc1BootAudio *b) { return b->done; }
 
 static Dkc1BootAudio s_boot_audio;
 static bool s_boot_audio_checked;
+static bool s_boot_audio_muted;
 
 static void BootAudioClose(void) { BootAudioFinish(&s_boot_audio); }
 
-void Dkc1TelemetryHostAudio(const int16_t *samples, int frames, int channels,
+void Dkc1TelemetryHostAudio(int16_t *samples, int frames, int channels,
                             int rate) {
   if (!s_boot_audio_checked) {
     s_boot_audio_checked = true;
     const char *path = getenv("DKCOUNTRY_BOOT_AUDIO");
     if (path && path[0]) {
+      s_boot_audio_muted = true;
       const char *limit = getenv("DKCOUNTRY_BOOT_AUDIO_SECONDS");
       const double seconds = limit && limit[0] ? atof(limit) : 70.0;
       if (Dkc1BootAudioOpen(&s_boot_audio, path, channels, rate, seconds))
@@ -261,6 +263,9 @@ void Dkc1TelemetryHostAudio(const int16_t *samples, int frames, int channels,
     }
   }
   Dkc1BootAudioWrite(&s_boot_audio, samples, frames);
+  /* A capture run is hidden: it stays silent from start to finish. */
+  if (s_boot_audio_muted && samples && frames > 0 && channels > 0)
+    memset(samples, 0, (size_t)frames * (size_t)channels * sizeof *samples);
 }
 
 static void FileSink(void *context, const char *line) {

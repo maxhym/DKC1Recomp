@@ -15,7 +15,7 @@ enum {
   kMaxNativeOnly = 512,
   kMaxMap = 512,
   kFidgetDelay = 300, /* ticks standing still before a fidget */
-  kFadeTicks = 5,     /* cross-fade between two poses, about 80 ms */
+  kFadeTicks = 9,     /* cross-fade between two poses, about 150 ms */
   kMaxFrameSide = 1024,
   kMaskRows = 240,
   kCaptureHalfWidth = 80,
@@ -54,6 +54,9 @@ typedef struct HdShow {
   /* Cross-fade: the frame shown last tick, and the one being faded out. */
   const struct HdFrame *last_frame, *fade_from;
   uint32_t fade_start;
+  /* Upright to all fours (+1) or back (-1), while its clip plays. */
+  int turn;
+  uint32_t turn_start;
   bool valid;
 } HdShow;
 static HdShow s_show;
@@ -321,6 +324,14 @@ static bool IsFidget(int animation) {
          animation == kDkc1HdFidget3;
 }
 
+static bool IsUpright(int animation) {
+  return animation == kDkc1HdIdle || IsFidget(animation);
+}
+
+static bool IsOnFours(int animation) {
+  return animation == kDkc1HdWalk || animation == kDkc1HdRun;
+}
+
 /* The fidget slots the pack carries take turns. */
 static int NextFidget(HdShow *show) {
   static const int kFidgets[3] = {kDkc1HdFidget, kDkc1HdFidget2, kDkc1HdFidget3};
@@ -501,6 +512,19 @@ void Dkc1HdSetActor(const Dkc1HdActorInput *input) {
       show->fade_from = show->last_frame;
       show->fade_start = s_tick;
     }
+    /* Between a standing pose and the four-legged gaits, the body goes
+     * down or up through its own clip instead of a plain cross-fade. A
+     * change of mind part-way continues from the same point, backwards. */
+    const int turn = IsUpright(show->animation) && IsOnFours(animation) ? 1 :
+                     IsOnFours(show->animation) && IsUpright(animation) ? -1 : 0;
+    const uint32_t turn_length = Duration(kDkc1HdStandToFours);
+    if (turn && turn_length && previous >= 0) {
+      const uint32_t done = show->turn ? s_tick - show->turn_start : turn_length;
+      show->turn_start = done < turn_length ? s_tick - (turn_length - 1 - done) : s_tick;
+      show->turn = turn;
+    } else if (!IsFidget(animation) || !IsUpright(show->animation)) {
+      show->turn = 0;
+    }
     show->animation = animation;
   }
   show->native = input->animation;
@@ -511,13 +535,29 @@ void Dkc1HdSetActor(const Dkc1HdActorInput *input) {
   if (resolved == kDkc1HdJump && animation == kDkc1HdFall)
     elapsed = UINT32_MAX / 2; /* no fall clip: hold the jump's last pose */
   actor->frame = FrameAt(resolved, elapsed);
+  if (show->turn) {
+    const uint32_t length = Duration(kDkc1HdStandToFours);
+    const uint32_t done = s_tick - show->turn_start;
+    if (done < length) {
+      actor->frame = FrameAt(kDkc1HdStandToFours, show->turn > 0 ? done : length - 1 - done);
+      show->since = s_tick; /* the gait or the rest starts when it ends */
+    } else {
+      show->turn = 0;
+      if (show->last_frame) {
+        show->fade_from = show->last_frame;
+        show->fade_start = s_tick;
+      }
+    }
+  }
   actor->fade_frame = NULL;
   actor->fade = 1.0f;
   if (show->fade_from) {
     const uint32_t age = s_tick - show->fade_start;
     if (age < kFadeTicks && show->fade_from != actor->frame) {
       actor->fade_frame = show->fade_from;
-      actor->fade = (float)(age + 1) / (float)(kFadeTicks + 1);
+      /* Eased, so the change starts and ends gently. */
+      const float t = (float)(age + 1) / (float)(kFadeTicks + 1);
+      actor->fade = t * t * (3.0f - 2.0f * t);
     } else {
       show->fade_from = NULL;
     }
@@ -555,7 +595,11 @@ void Dkc1HdObserveLine(const Ppu *ppu, int line) {
   uint8_t *row = s_mask[line - 1];
   const PpuZbufType *data = ppu->bgBuffers[0].data;
   const unsigned level = s_actor.level;
-  for (unsigned i = 0; i < kPpuBufWidth; ++i) row[i] = (unsigned)(data[i] >> 12) > level;
+  /* Only backgrounds cover Donkey: between sprites the OAM order decides,
+   * not the priority bits, and the pose is drawn over them (an animal buddy
+   * under its rider). Sprite pixels use the upper half of the palette. */
+  for (unsigned i = 0; i < kPpuBufWidth; ++i)
+    row[i] = (unsigned)(data[i] >> 12) > level && (data[i] & 0x80) == 0;
 }
 
 /* ---- Presentation styles: run on the composited frame, never on the pack. */

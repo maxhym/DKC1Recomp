@@ -23,15 +23,21 @@ own art.
    velocity is upward), roll, carry, throw, ride on an animal buddy, ropes,
    swim, hurt, victory. Animation ID zero falls back to the actor state, then
    the velocity. Resting poses are relieved by a fidget after 5 s; the fidget
-   slots take turns. The hand slap uses the first fidget.
+   slots take turns. The hand slap uses the first fidget. Donkey carries
+   overhead, so the pack's front-carry slots (DKC2's Kongs) are not used.
 3. After each `ppu_runLine`, `Dkc1HdObserveLine` records where the main
-   screen's priority buffer holds a layer above Donkey's OBJ priority.
+   screen's priority buffer holds a background layer above Donkey's OBJ
+   priority. Other sprites never cover the pose: between sprites the OAM
+   order decides, not the priority bits, and an animal buddy would otherwise
+   hide its rider.
 4. `Dkc1HdFinishFrame` reads the captured native sprite's first and last
    rows. Ground poses put their anchor row under the native sprite; rope,
    water, air and hurt poses put their own middle on the native sprite's
    middle. A frame where the game hides Donkey (blinking) hides the pose. The
    pose is cut against the recorded occluders, cross-faded from the previous
-   pose for 5 ticks, styled, and handed to the presenter.
+   pose for 9 eased ticks, styled, and handed to the presenter. Between a
+   standing pose and the four-legged walk or run, the pack's `stand_to_fours`
+   clip plays first, forwards or backwards.
 5. `runner/windows_graphics.c` draws it as one alpha-blended quad after the
    flat or CRT passes.
 

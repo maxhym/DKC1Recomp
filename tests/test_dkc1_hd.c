@@ -147,6 +147,12 @@ static void TestPlacementAndOcclusion(void) {
   /* HD columns 0-3 are native column 99, 4-7 are column 100 (covered). */
   CHECK(s->rgba[(2 * 8 + 1) * 4 + 3] == 255 && s->rgba[(2 * 8 + 1) * 4 + 0] == 255);
   CHECK(s->rgba[(2 * 8 + 6) * 4 + 3] == 0);
+  /* Another sprite there, even with higher priority bits (an animal buddy
+   * under its rider), does not cover the pose. */
+  ppu->bgBuffers[0].data[100 + kPpuExtraLeftRight] = 0xe085;
+  s = Render(ppu, &in, 60, 99);
+  CHECK(s && s->rgba[(2 * 8 + 6) * 4 + 3] == 255);
+  ppu->bgBuffers[0].data[100 + kPpuExtraLeftRight] = 0xc000;
   /* A higher OBJ priority stands in front of the tree. */
   in.properties = 3u << 4;
   s = Render(ppu, &in, 60, 99);
@@ -194,12 +200,14 @@ static void TestFidgetAndFade(void) {
   CHECK(after == kDkc1HdIdle);
   /* Idle (red) to walk (blue, left half clear): the old frame fades out. */
   const Dkc1OverlaySprite *s = NULL;
-  for (unsigned i = 0; i < 8; ++i) s = Render(ppu, &in, 60, 99); /* past the fidget's fade */
+  for (unsigned i = 0; i < 12; ++i) s = Render(ppu, &in, 60, 99); /* past the fidget's fade */
   CHECK(s && s->rgba[0] == 255 && s->rgba[3] == 255);
   in.animation = 0x03;
   s = Render(ppu, &in, 60, 99);
   CHECK(s && s->rgba[0] == 255 && s->rgba[3] > 200 && s->rgba[3] < 255);
-  CHECK(s && s->rgba[6 * 4 + 3] == 255 && s->rgba[6 * 4 + 2] > 20);
+  CHECK(s && s->rgba[6 * 4 + 3] == 255 && s->rgba[6 * 4 + 0] > 230 && s->rgba[6 * 4 + 2] > 0);
+  for (unsigned i = 0; i < 4; ++i) s = Render(ppu, &in, 60, 99);
+  CHECK(s && s->rgba[6 * 4 + 0] > 90 && s->rgba[6 * 4 + 2] > 90);  /* half-way: both poses */
   for (unsigned i = 0; i < 5; ++i) s = Render(ppu, &in, 60, 99);
   CHECK(s && s->rgba[3] == 0 && s->rgba[6 * 4 + 2] == 255 && s->rgba[6 * 4 + 0] == 0);
   /* Disabled or unloaded: nothing is drawn. */

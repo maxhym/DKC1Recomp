@@ -54,8 +54,14 @@ enum {
   kDkc1HdFidget3 = 17,
   kDkc1HdHang = 18,
   kDkc1HdClimbDown = 19,
+  /* Objects held in front of the chest: DKC2's Kongs. Donkey carries
+   * overhead, so these three are not used here. */
+  kDkc1HdCarryFrontIdle = 20,
+  kDkc1HdCarryFrontWalk = 21,
+  kDkc1HdThrowFront = 22,
+  kDkc1HdStandToFours = 23, /* upright to all fours; played backwards too */
   kDkc1HdBasicAnimCount = 5,
-  kDkc1HdAnimCount = 20,
+  kDkc1HdAnimCount = 24,
 };
 
 /* Presentation styles, applied to each composited frame at run time. */

@@ -292,6 +292,7 @@ static int Resolve(int animation) {
     case kDkc1HdClimbMove: return Resolve(kDkc1HdClimbIdle);
     case kDkc1HdClimbDown: return Resolve(kDkc1HdClimbMove);
     case kDkc1HdHang: return Resolve(kDkc1HdClimbIdle);
+    case kDkc1HdKnockout: return Resolve(kDkc1HdHurt);
     case kDkc1HdFall: return s_pack.animations[kDkc1HdJump].count ? kDkc1HdJump : kDkc1HdIdle;
     default: return kDkc1HdIdle;
   }
@@ -364,15 +365,15 @@ static const PoseMap kDonkeyPoses[0x69] = {
   [0x06] = FEET(kDkc1HdWalk),       /* turn */
   [0x07] = AIR,
   [0x08] = AIR,
-  [0x09] = FEET(kDkc1HdVictory),
-  [0x0a] = FEET(kDkc1HdIdle),       /* duck */
+  [0x09] = FEET(kDkc1HdFidget),     /* beats his chest at the level start */
+  [0x0a] = FEET(kDkc1HdIdle),       /* too close to an edge */
   [0x0b] = REST,
   [0x0c] = MID(kDkc1HdHurt),
   [0x0d] = MID(kDkc1HdHurt),
   [0x0e] = FEET(kDkc1HdRun),
   [0x0f] = MID(kDkc1HdSwim),
-  [0x10] = MID(kDkc1HdHurt),
-  [0x11] = FEET(kDkc1HdFidget),     /* hand slap */
+  [0x10] = FEET(kDkc1HdKnockout),   /* dead */
+  [0x11] = FEET(kDkc1HdFidget),     /* pushes against a wall (unused) */
   [0x12] = FEET(kDkc1HdFidget),
   [0x13] = FEET(kDkc1HdFidget),
   [0x14] = FEET(kDkc1HdRun),
@@ -412,9 +413,10 @@ static const PoseMap kDonkeyPoses[0x69] = {
   [0x51] = FEET(kDkc1HdVictory),
   [0x52] = AIR,
   [0x53] = AIR,
-  [0x54] = FEET(kDkc1HdIdle), [0x55] = FEET(kDkc1HdIdle), [0x56] = FEET(kDkc1HdIdle),
-  [0x57] = FEET(kDkc1HdIdle), [0x58] = FEET(kDkc1HdIdle), [0x59] = FEET(kDkc1HdIdle),
-  [0x5a] = FEET(kDkc1HdIdle),
+  /* $54-$5A: ducking, then entering, crossing and leaving a crawlspace. */
+  [0x54] = FEET(kDkc1HdCrouch), [0x55] = FEET(kDkc1HdCrouch), [0x56] = FEET(kDkc1HdCrouch),
+  [0x57] = FEET(kDkc1HdCrouch), [0x58] = FEET(kDkc1HdCrouch), [0x59] = FEET(kDkc1HdCrouch),
+  [0x5a] = FEET(kDkc1HdCrouch),
   [0x5b] = FEET(kDkc1HdRide),
   [0x5c] = MID(kDkc1HdClimbMove),
   [0x5d] = MID(kDkc1HdClimbMove),
@@ -427,7 +429,7 @@ static const PoseMap kDonkeyPoses[0x69] = {
   [0x64] = MID(kDkc1HdHurt),
   [0x65] = MID(kDkc1HdSwim),
   [0x66] = MID(kDkc1HdHurt),
-  [0x67] = FEET(kDkc1HdFidget),
+  [0x67] = FEET(kDkc1HdFidget),     /* ground slap */
   [0x68] = AIR,
 };
 #undef FEET

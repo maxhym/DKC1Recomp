@@ -64,8 +64,10 @@ enum {
   kDkc1HdHangIdle = 24,
   kDkc1HdClimbWideIdle = 25,
   kDkc1HdClimbWideMove = 26,
+  kDkc1HdCrouch = 27,       /* ducked low: ducking and crawlspaces */
+  kDkc1HdKnockout = 28,     /* lying knocked out: a lost life */
   kDkc1HdBasicAnimCount = 5,
-  kDkc1HdAnimCount = 27,
+  kDkc1HdAnimCount = 29,
 };
 
 /* Presentation styles, applied to each composited frame at run time. */

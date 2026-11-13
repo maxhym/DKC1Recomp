@@ -60,8 +60,12 @@ enum {
   kDkc1HdCarryFrontWalk = 21,
   kDkc1HdThrowFront = 22,
   kDkc1HdStandToFours = 23, /* upright to all fours; played backwards too */
+  /* DKC2 only: hanging still, and spread between two ropes. */
+  kDkc1HdHangIdle = 24,
+  kDkc1HdClimbWideIdle = 25,
+  kDkc1HdClimbWideMove = 26,
   kDkc1HdBasicAnimCount = 5,
-  kDkc1HdAnimCount = 24,
+  kDkc1HdAnimCount = 27,
 };
 
 /* Presentation styles, applied to each composited frame at run time. */

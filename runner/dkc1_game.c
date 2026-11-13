@@ -5,6 +5,7 @@
 #include "dkc1_wall_seams.h"
 #include "dkc1_shadow_window.h"
 #include "dkc1_ws_trace.h"
+#include "dkc1_telemetry.h"
 
 #include "common_cpu_infra.h"
 #include "common_rtl.h"
@@ -155,6 +156,8 @@ static void Dkc1RunOneFrame(void) {
     snes_sync_master_clock(g_snes, g_cpu.master_cycles);
   }
   s_next_frame_master += kDkc1NtscFrameMasterClocks;
+  /* Read-only; inert unless the DKCountry launcher requested telemetry. */
+  Dkc1TelemetryHostFrame(g_ram, (uint64_t)snes_frame_counter);
 }
 
 static void Dkc1SaveExtra(SaveLoadInfo *sli) {
@@ -200,6 +203,7 @@ static void Dkc1LoadExtra(SaveLoadInfo *sli, uint32_t version) {
 static void Dkc1ResetWidescreenShadow(void);
 
 static void Dkc1OnStateLoaded(uint32_t version) {
+  Dkc1TelemetryHostStateLoaded();
   g_cpu.ram = g_ram;
   g_apu_last_sync_master = g_cpu.master_cycles;
   g_snes->beamMasterLast = g_cpu.master_cycles;

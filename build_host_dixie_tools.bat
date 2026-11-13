@@ -37,6 +37,7 @@ cl /nologo /c /MP8 /W0 /O1 %DEFS% %INCS% ^
   ..\..\runner\dkc1_script.c ..\..\runner\dkc1_debug_dump.c ^
   ..\..\runner\dkc1_flight_recorder.c ^
   ..\..\runner\dkc1_blank_scan.c ^
+  ..\..\runner\dkc1_telemetry.c ^
   ..\..\runner\dkc1_invariant_monitor.c ^
   ..\..\runner\verified_rom.c ^
   ..\..\generated\snesrecomp_dixie\*.c

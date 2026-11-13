@@ -79,6 +79,16 @@ before showing the first interactive frame; save-state and checkpoint commands
 are rejected. RainbowZ combines this with an exact modified-ROM hash pin to
 open its generated Jungle Hijinxs level directly without a reusable save state.
 
+## DKCountry launcher telemetry
+
+When the separate DKCountry launcher starts the game it sets
+`DKCOUNTRY_TELEMETRY`; the game then appends one JSON line per event (levels,
+bananas, lives lost, KONG letters, distance, state loads) so the launcher can
+show statistics and achievements. The bridge only reads memory after each
+frame and does nothing without the variable. See
+[the telemetry notes](docs/DKCOUNTRY_TELEMETRY.md) for fields and the
+remaining validation.
+
 ## Debugging and validation
 
 The widescreen port is developed from byte-exact, deterministic evidence—not

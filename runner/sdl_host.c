@@ -11,6 +11,7 @@
 #include "dkc1_debug_dump.h"
 #include "dkc1_flight_recorder.h"
 #include "dkc1_game.h"
+#include "dkc1_telemetry.h"
 #include "dkc1_invariant_monitor.h"
 #include "dkc1_haptics.h"
 #include "dkc1_msu1.h"
@@ -2541,6 +2542,7 @@ int main(int argc, char **argv) {
     work_profile.input = phase_end - phase_start;
     phase_start = phase_end;
     Dkc1StompProbeCapture(&s_stomp_probe, g_ram);
+    Dkc1TelemetryHostInput(input);
     RtlRunFrame(input);
     if (Dkc1StompProbeAccepted(&s_stomp_probe, g_ram))
       PulseStompHaptic();
